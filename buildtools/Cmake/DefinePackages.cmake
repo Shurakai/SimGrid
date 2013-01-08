@@ -103,7 +103,7 @@ set(SMPI_SRC
   src/smpi/smpi_pmpi.c
   src/smpi/smpi_replay.c
   )
-  
+
 if(SMPI_F2C)
   set(SMPI_SRC
     ${SMPI_SRC}
@@ -197,6 +197,7 @@ set(SURF_SRC
   src/surf/surf_config.c
   src/surf/surf_model.c
   src/surf/surf_routing.c
+  src/surf/surf_routing_torus.c
   src/surf/surf_routing_cluster.c
   src/surf/surf_routing_dijkstra.c
   src/surf/surf_routing_floyd.c
@@ -511,13 +512,13 @@ set(DOC_SOURCES
   doc/triva-graph_configuration.png
   doc/triva-graph_visualization.png
   doc/triva-time_interval.png
-  
+
     doc/doxygen/footer.html
   doc/doxygen/header.html
   doc/doxygen/stylesheet.css
-  
+
   doc/doxygen/index.doc
-  doc/doxygen/getting_started.doc  
+  doc/doxygen/getting_started.doc
   doc/doxygen/introduction.doc
   doc/doxygen/use.doc
   doc/doxygen/bindings.doc
@@ -529,9 +530,9 @@ set(DOC_SOURCES
   doc/doxygen/tracing.doc
   doc/doxygen/FAQ.doc
   doc/doxygen/advanced.doc
-    doc/doxygen/inside_autotests.doc  
+    doc/doxygen/inside_autotests.doc
     doc/doxygen/inside_cmake.doc
-    doc/doxygen/inside_extending.doc 
+    doc/doxygen/inside_extending.doc
     doc/doxygen/inside_release.doc
     doc/doxygen/contributing.doc
   doc/doxygen/modules.doc
@@ -548,7 +549,7 @@ set(DOC_FIGS
   ${CMAKE_HOME_DIRECTORY}/doc/shared/fig/simgrid_modules.fig
   ${CMAKE_HOME_DIRECTORY}/doc/shared/fig/simgrid_modules2.fig
   )
-  
+
 set(DOC_TOOLS
   tools/doxygen/fig2dev_postprocessor.pl
   tools/doxygen/index_create.pl
