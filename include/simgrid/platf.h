@@ -170,6 +170,18 @@ typedef struct s_sg_platf_route_cbarg {
 
 #define SG_PLATF_ROUTE_INITIALIZER {TRUE,NULL,NULL,NULL,NULL,NULL}
 
+typedef struct s_sg_platf_torus_cbarg *sg_platf_torus_cbarg_t;
+typedef struct s_sg_platf_torus_cbarg {
+  const char* id;
+  const char* dimensions;
+  double power;
+  int core_amount;
+  double bw;
+  double lat;
+} s_sg_platf_torus_cbarg_t;
+
+#define SG_PLATF_TORUS_INITIALIZER {NULL,NULL,NULL,NULL,NULL,NULL}
+
 typedef struct s_sg_platf_cluster_cbarg *sg_platf_cluster_cbarg_t;
 typedef struct s_sg_platf_cluster_cbarg {
   const char* id;
