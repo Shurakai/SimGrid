@@ -1,8 +1,8 @@
 <!-- Small DTD for SURF based tools. -->
-<!ELEMENT platform ((config|random)*,(include|cluster|cabinet|peer|AS|trace|trace_connect)*,(process)*)>
+<!ELEMENT platform ((config|random)*,(include|torus|cluster|cabinet|peer|AS|trace|trace_connect)*,(process)*)>
 <!ATTLIST platform version CDATA "0.0">
 
-<!ELEMENT include (include|cluster|cabinet|peer|AS|trace|trace_connect)*>
+<!ELEMENT include (include|torus|cluster|cabinet|peer|AS|trace|trace_connect)*>
 <!ATTLIST include file CDATA #REQUIRED>
 
 <!ELEMENT trace (#PCDATA)>
@@ -25,9 +25,9 @@
 <!ATTLIST trace_connect trace CDATA #REQUIRED>
 <!ATTLIST trace_connect element CDATA #REQUIRED>
 
-<!ELEMENT AS ((prop*),(((AS|include|storage_type|storage|link|backbone|cabinet|cluster|peer|trace|trace_connect)*,(ASroute|trace|trace_connect|bypassASroute)*,(trace|trace_connect)*)|((include|storage_type|storage|host|gpu|cabinet|router|link|backbone|trace|trace_connect|host_link)*,(route|trace|trace_connect|bypassRoute)*)))>
+<!ELEMENT AS ((prop*),(((AS|include|storage_type|storage|link|backbone|cabinet|torus|cluster|peer|trace|trace_connect)*,(ASroute|trace|trace_connect|bypassASroute)*,(trace|trace_connect)*)|((include|storage_type|storage|host|gpu|cabinet|router|link|backbone|trace|trace_connect|host_link)*,(route|trace|trace_connect|bypassRoute)*)))>
 <!ATTLIST AS id CDATA #REQUIRED>
-<!ATTLIST AS routing (Full|Floyd|Dijkstra|DijkstraCache|None|RuleBased|Vivaldi|Cluster) "None">
+<!ATTLIST AS routing (Full|Floyd|Dijkstra|DijkstraCache|None|RuleBased|Vivaldi|Cluster|Torus) "None">
 
 <!ELEMENT storage_type (prop*)>
 <!ATTLIST storage_type id       CDATA #REQUIRED>
@@ -65,6 +65,14 @@
 <!ATTLIST host_link id CDATA #REQUIRED>
 <!ATTLIST host_link up CDATA #REQUIRED>
 <!ATTLIST host_link down CDATA #REQUIRED>
+
+<!ELEMENT torus EMPTY>
+<!ATTLIST torus id CDATA #REQUIRED>
+<!ATTLIST torus dimensions CDATA #REQUIRED>
+<!ATTLIST torus power CDATA #REQUIRED>
+<!ATTLIST torus core CDATA "1">
+<!ATTLIST torus bw CDATA #REQUIRED>
+<!ATTLIST torus lat CDATA #REQUIRED>
 
 <!ELEMENT cluster EMPTY>
 <!ATTLIST cluster id CDATA #REQUIRED>
