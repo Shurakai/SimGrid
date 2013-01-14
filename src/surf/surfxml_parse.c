@@ -332,6 +332,56 @@ void STag_surfxml_router(void){
   sg_platf_new_router(&router);
 }
 
+void STag_surfxml_torus(void){
+  s_sg_platf_torus_cbarg_t torus;
+  memset(&torus,0,sizeof(torus));
+  torus.id = A_surfxml_torus_id;
+  /*torus.prefix = A_surfxml_torus_prefix;*/
+  /*torus.suffix = A_surfxml_torus_suffix;*/
+  torus.dimensions = A_surfxml_torus_dimensions;
+  torus.power= surf_parse_get_double(A_surfxml_torus_power);
+  torus.core_amount = surf_parse_get_int(A_surfxml_torus_core);
+  torus.bw =   surf_parse_get_double(A_surfxml_torus_bw);
+  torus.lat =  surf_parse_get_double(A_surfxml_torus_lat);
+  /*if(strcmp(A_surfxml_torus_bb_bw,""))*/
+    /*torus.bb_bw = surf_parse_get_double(A_surfxml_torus_bb_bw);*/
+  /*if(strcmp(A_surfxml_torus_bb_lat,""))*/
+    /*torus.bb_lat = surf_parse_get_double(A_surfxml_torus_bb_lat);*/
+  /*torus.router_id = A_surfxml_torus_router_id;*/
+
+  /*switch (AX_surfxml_torus_sharing_policy) {*/
+  /*case A_surfxml_torus_sharing_policy_SHARED:*/
+    /*torus.sharing_policy = SURF_LINK_SHARED;*/
+    /*break;*/
+  /*case A_surfxml_torus_sharing_policy_FULLDUPLEX:*/
+    /*torus.sharing_policy = SURF_LINK_FULLDUPLEX;*/
+    /*break;*/
+  /*case A_surfxml_torus_sharing_policy_FATPIPE:*/
+    /*torus.sharing_policy = SURF_LINK_FATPIPE;*/
+    /*break;*/
+  /*default:*/
+    /*surf_parse_error("Invalid torus sharing policy for torus %s",*/
+                     /*torus.id);*/
+    /*break;*/
+  /*}*/
+  /*switch (AX_surfxml_torus_bb_sharing_policy) {*/
+  /*case A_surfxml_torus_bb_sharing_policy_FATPIPE:*/
+    /*torus.bb_sharing_policy = SURF_LINK_FATPIPE;*/
+    /*break;*/
+  /*case A_surfxml_torus_bb_sharing_policy_SHARED:*/
+    /*torus.bb_sharing_policy = SURF_LINK_SHARED;*/
+    /*break;*/
+  /*default:*/
+    /*surf_parse_error("Invalid bb sharing policy in torus %s",*/
+                     /*torus.id);*/
+    /*break;*/
+  /*}*/
+
+  /*torus.availability_trace = A_surfxml_torus_availability_file;*/
+  /*torus.state_trace = A_surfxml_torus_state_file;*/
+  sg_platf_new_torus(&torus);
+}
+
 void STag_surfxml_cluster(void){
   s_sg_platf_cluster_cbarg_t cluster;
   memset(&cluster,0,sizeof(cluster));
@@ -791,6 +841,7 @@ void STag_surfxml_trace(void){}
 void ETag_surfxml_router(void){}
 void ETag_surfxml_host_link(void){}
 void ETag_surfxml_cluster(void){}
+void ETag_surfxml_torus(void){}
 void ETag_surfxml_cabinet(void){}
 void ETag_surfxml_peer(void){}
 void STag_surfxml_backbone(void){}

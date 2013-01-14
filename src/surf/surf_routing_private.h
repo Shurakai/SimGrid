@@ -69,6 +69,10 @@ void model_floyd_parse_route(AS_t rc, sg_platf_route_cbarg_t route);
 AS_t model_rulebased_create(void);      /* create structures for rulebased routing model */
 
 /* ************************************************** */
+/* ************** TORUS ROUTING **************** */
+AS_t model_torus_create(void);      /* create structures for torus dimension routing model */
+
+/* ************************************************** */
 /* **************  Cluster ROUTING   **************** */
 typedef struct {
   s_as_t generic_routing;

@@ -77,7 +77,8 @@ typedef enum {
   SURF_MODEL_NONE,
   SURF_MODEL_RULEBASED,
   SURF_MODEL_VIVALDI,
-  SURF_MODEL_CLUSTER
+  SURF_MODEL_CLUSTER,
+  SURF_MODEL_TORUS
 } e_routing_types;
 
 struct s_model_type routing_models[] = {
@@ -101,6 +102,8 @@ struct s_model_type routing_models[] = {
    model_vivaldi_create, NULL},
   {"Cluster", "Cluster routing",
    model_cluster_create, NULL},
+  {"Torus", "Torus routing. This is a dimension-based routing.",
+   model_torus_create, NULL},
   {NULL, NULL, NULL, NULL}
 };
 
@@ -348,6 +351,7 @@ void routing_AS_begin(sg_platf_AS_cbarg_t AS)
 
   /* search the routing model */
   switch(AS->routing){
+    case A_surfxml_AS_routing_Torus:       model = &routing_models[SURF_MODEL_TORUS];break;
     case A_surfxml_AS_routing_Cluster:       model = &routing_models[SURF_MODEL_CLUSTER];break;
     case A_surfxml_AS_routing_Dijkstra:      model = &routing_models[SURF_MODEL_DIJKSTRA];break;
     case A_surfxml_AS_routing_DijkstraCache: model = &routing_models[SURF_MODEL_DIJKSTRACACHE];break;
@@ -436,10 +440,10 @@ void routing_AS_end(sg_platf_AS_cbarg_t AS)
 /**
  * \brief Get the AS father and the first elements of the chain
  *
- * \param src the source host name 
+ * \param src the source host name
  * \param dst the destination host name
- * 
- * Get the common father of the to processing units, and the first different 
+ *
+ * Get the common father of the to processing units, and the first different
  * father in the chain
  */
 static void elements_father(sg_routing_edge_t src, sg_routing_edge_t dst,
@@ -509,11 +513,11 @@ static void elements_father(sg_routing_edge_t src, sg_routing_edge_t dst,
 /**
  * \brief Recursive function for get_route_latency
  *
- * \param src the source host name 
+ * \param src the source host name
  * \param dst the destination host name
  * \param *route the route where the links are stored. It is either NULL or a ready to use dynar
  * \param *latency the latency, if needed
- * 
+ *
  * This function is called by "get_route" and "get_latency". It allows to walk
  * recursively through the ASes tree.
  */
@@ -548,6 +552,7 @@ static void _get_route_and_latency(sg_routing_edge_t src, sg_routing_edge_t dst,
   if (src_father == dst_father) {       /* SURF_ROUTING_BASE */
     route.link_list = *links;
     common_father->get_route_and_latency(common_father, src, dst, &route,latency);
+    *links = route.link_list;
     // if vivaldi latency+=vivaldi(src,dst)
     return;
   }
@@ -562,7 +567,6 @@ static void _get_route_and_latency(sg_routing_edge_t src, sg_routing_edge_t dst,
   common_father->get_route_and_latency(common_father,
                                        src_father_net_elm, dst_father_net_elm,
                                        &route, latency);
-
   xbt_assert((route.gw_src != NULL) && (route.gw_dst != NULL),
       "bad gateways for route from \"%s\" to \"%s\"", src->name, dst->name);
 
@@ -648,7 +652,7 @@ e_surf_network_element_type_t routing_get_network_element_type(const char *name)
 
 /**
  * \brief Generic method: create the global routing schema
- * 
+ *
  * Make a global routing structure and set all the parsing functions.
  */
 void routing_model_create( void *loopback)
@@ -785,6 +789,96 @@ static void routing_parse_cabinet(sg_platf_cabinet_cbarg_t cabinet)
     xbt_dynar_free(&radical_ends);
   }
   xbt_dynar_free(&radical_elements);
+}
+
+static void routing_parse_torus(sg_platf_torus_cbarg_t torus) {
+    printf("Hier ist der Parser für Tori! ID: %s\n", torus->dimensions);
+
+    char *groups, *link_id = NULL;
+    unsigned int iter, totalRanks = 0;
+    xbt_dynar_t dimensions;
+    dimensions = xbt_str_split(torus->dimensions, ",");
+    xbt_dynar_foreach(dimensions, iter, groups) {
+
+        if (totalRanks == 0)
+            totalRanks = surf_parse_get_int(xbt_dynar_get_as(dimensions, iter, char *));
+        else
+            totalRanks *= surf_parse_get_int(xbt_dynar_get_as(dimensions, iter, char *));
+    }
+
+    int i = 0;
+    int j = 0;
+    int rankId = 0;
+    for (i = 0; i < totalRanks; i++) {
+        s_sg_platf_host_cbarg_t host;
+        memset(&host, 0, sizeof(host));
+
+        host.id = bprintf("host%i", i);
+        host.power_peak = torus->power;
+        host.power_scale = 1.0;
+        host.core_amount = torus->core_amount;
+        host.initial_state = SURF_RESOURCE_ON;
+        host.coord = "";
+        sg_platf_new_host(&host);
+    }
+
+    int neighbour;
+    int x,y,z;
+    x = atoi(xbt_dynar_get_as(dimensions, 0, char *));
+    y = atoi(xbt_dynar_get_as(dimensions, 1, char *));
+    z = atoi(xbt_dynar_get_as(dimensions, 2, char *));
+    /**
+     * Add loops, so each rank can send messages to itself
+     * Maybe this is important for some edge case...?
+     */
+    for (rankId = 0; rankId < totalRanks; rankId++) {
+        s_sg_platf_link_cbarg_t link;
+        link_id = bprintf("link_from_%i_to_%i", rankId, rankId);
+        memset(&link, 0, sizeof(link));
+        link.id = link_id;
+        link.bandwidth = torus->bw;
+        link.latency = torus->lat;
+        link.state = SURF_RESOURCE_ON;
+        /*link.policy = torus->sharing_policy;*/
+        printf("Adding %s\n", link_id);
+        sg_platf_new_link(&link);
+    }
+    for (rankId = 0; rankId < totalRanks; rankId++) {
+      s_sg_platf_link_cbarg_t link;
+
+      /**
+       * Create all links that exist in the torus.
+       * Each rank creates 3 links: up, right and deep.
+       **/
+      for (j = 0; j < 3; j++) {
+          if (j == 0) // Calculate right neighbour in x-dim
+              neighbour = (rankId % x == x-1) ? rankId-x+1 : rankId+1;
+          else if (j == 1) // From bottom to top
+              neighbour = ( ((int) rankId / x) % y == y-1) ? rankId-(y-1)*x : rankId+x;
+          else if (j == 2) // "Deeper" in z-dim
+              neighbour = ( ((int) rankId / (x*y)) == z-1) ? rankId-(z-1)*x*y : rankId+x*y;
+
+          link_id = bprintf("link_from_%i_to_%i", rankId, neighbour);
+          memset(&link, 0, sizeof(link));
+          link.id = link_id;
+          link.bandwidth = torus->bw;
+          link.latency = torus->lat;
+          link.state = SURF_RESOURCE_ON;
+          /*link.policy = torus->sharing_policy;*/
+          printf("Adding %s\n", link_id);
+          sg_platf_new_link(&link);
+      }
+    }
+
+    s_sg_platf_AS_cbarg_t AS = SG_PLATF_AS_INITIALIZER;
+    AS.id = torus->id;
+    AS.routing = A_surfxml_AS_routing_Torus;
+    sg_platf_new_AS_begin(&AS);
+
+
+    free(link_id);
+
+    printf("END of routing_parse_torus()\n");
 }
 
 static void routing_parse_cluster(sg_platf_cluster_cbarg_t cluster)
@@ -1142,6 +1236,7 @@ void routing_register_callbacks()
   sg_platf_bypassASroute_add_cb(parse_E_bypassASroute);
 
   sg_platf_cluster_add_cb(routing_parse_cluster);
+  sg_platf_torus_add_cb(routing_parse_torus);
   sg_platf_cabinet_add_cb(routing_parse_cabinet);
 
   sg_platf_peer_add_cb(routing_parse_peer);
