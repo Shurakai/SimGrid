@@ -73,6 +73,7 @@
 <!ATTLIST torus core CDATA "1">
 <!ATTLIST torus bw CDATA #REQUIRED>
 <!ATTLIST torus lat CDATA #REQUIRED>
+<!ATTLIST torus sharing_policy (SHARED|FULLDUPLEX|FATPIPE) "FULLDUPLEX">
 
 <!ELEMENT cluster EMPTY>
 <!ATTLIST cluster id CDATA #REQUIRED>
