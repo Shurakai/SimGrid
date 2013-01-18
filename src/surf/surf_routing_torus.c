@@ -28,9 +28,11 @@ static void torus_get_route_and_latency(AS_t as,
               /*src->name,src->id,*/
               /*dst->name,dst->id);*/
 
-    printf("torus_get_route_and_latency echo from'%s'[%d] to '%s'[%d]",
+    printf("torus_get_route_and_latency from'%s'[%d] to '%s'[%d]\n",
            src->name,src->id,
            dst->name,dst->id);
+
+    as_torus_t torusAS = (as_torus_t) as;
 
     char* link_name;
     if (src->id == dst->id) {
@@ -45,30 +47,18 @@ static void torus_get_route_and_latency(AS_t as,
         return;
     }
 
-    /*if (i == 0) {*/
-        /*memset(&link, 0, sizeof(link));*/
-        /*link.id = bprintf("link_%i", i);*/
-        /*link.bandwidth = 1000000; //torus->bw;*/
-        /*link.latency = 1; //torus->lat;*/
-        /*link.state = SURF_RESOURCE_ON;*/
-        /*[>link.policy = torus->sharing_policy;<]*/
-        /*sg_platf_new_link(&link);*/
-        /*i++;*/
-    /*}*/
-
-
-    static int i = 0;
     /**
      * Dimension based routing routes through each dimension consecutively
      * TODO Change to dynamic assignment
      */
-    int x = 3;
-    int y = 3;
-    int z = 3;
-    int current_node = src->id;
-    int next_node = 0;
-    int myCoords[3] = {src->id % x, ( src->id / x) % y, (src->id / x*y) % z};
-    int targetCoords[3] = {dst->id % x, ( dst->id / x) % y, (dst->id / x*y) % z};
+    int x                         = xbt_dynar_get_as(torusAS->dimensions, 0, int);
+    int y                         = xbt_dynar_get_as(torusAS->dimensions, 1, int);
+    int z                         = xbt_dynar_get_as(torusAS->dimensions, 2, int);
+    printf("x=%i,y=%i,z=%i\n", x, y, z);
+    int current_node              = src->id;
+    int next_node                 = 0;
+    int myCoords[3]               = {src->id % x, ( src->id / x) % y, (src->id / x*y) % z};
+    int targetCoords[3]           = {dst->id % x, ( dst->id / x) % y, (dst->id / x*y) % z};
     bool use_lnk_from_cur_to_next = false;
     while (current_node != dst->id) {
       // First, we will route in x-dimension
@@ -136,7 +126,7 @@ static void torus_get_route_and_latency(AS_t as,
         /*printf("Routing in z dimension: Next node: %i\n", next_node);*/
       }
 
-      printf("Current node is %i and the expression evaluates to: %i\n", current_node, (current_node / (x*y)) % z);
+      printf("Current node is %i\n", current_node);
 
       assert(next_node >= 0);
 
@@ -197,7 +187,7 @@ static int torus_parse_AS(AS_t rc, sg_routing_edge_t elm) {
 /* Creation routing model functions */
 AS_t model_torus_create(void)
 {
-  AS_t result = model_generic_create_sized(sizeof(s_as_t));
+  AS_t result = model_generic_create_sized(sizeof(s_as_torus_t));
   result->get_route_and_latency = torus_get_route_and_latency;
   result->finalize = model_torus_finalize;
   result->parse_AS = torus_parse_AS;

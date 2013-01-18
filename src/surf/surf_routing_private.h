@@ -70,6 +70,12 @@ AS_t model_rulebased_create(void);      /* create structures for rulebased routi
 
 /* ************************************************** */
 /* ************** TORUS ROUTING **************** */
+typedef struct {
+  s_as_t generic_routing;
+  // These are the dimension measures of our torus; it's dynamic, so that
+  // a n-dimensional torus can be easily implemented.
+  xbt_dynar_t dimensions;
+} s_as_torus_t, *as_torus_t;
 AS_t model_torus_create(void);      /* create structures for torus dimension routing model */
 
 /* ************************************************** */

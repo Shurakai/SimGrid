@@ -800,10 +800,13 @@ static void routing_parse_torus(sg_platf_torus_cbarg_t torus) {
     dimensions = xbt_str_split(torus->dimensions, ",");
     xbt_dynar_foreach(dimensions, iter, groups) {
 
+        int tmp = surf_parse_get_int(xbt_dynar_get_as(dimensions, iter, char *));
+        xbt_dynar_set_as(dimensions, iter, int, tmp);
+
         if (totalRanks == 0)
-            totalRanks = surf_parse_get_int(xbt_dynar_get_as(dimensions, iter, char *));
+            totalRanks = tmp;
         else
-            totalRanks *= surf_parse_get_int(xbt_dynar_get_as(dimensions, iter, char *));
+            totalRanks *= tmp;
     }
 
     int i = 0;
@@ -817,6 +820,7 @@ static void routing_parse_torus(sg_platf_torus_cbarg_t torus) {
         host.power_peak = torus->power;
         host.power_scale = 1.0;
         host.core_amount = torus->core_amount;
+        // SURF_RESOURCE_ON = Host is up & ready
         host.initial_state = SURF_RESOURCE_ON;
         host.coord = "";
         sg_platf_new_host(&host);
@@ -824,9 +828,10 @@ static void routing_parse_torus(sg_platf_torus_cbarg_t torus) {
 
     int neighbour;
     int x,y,z;
-    x = atoi(xbt_dynar_get_as(dimensions, 0, char *));
-    y = atoi(xbt_dynar_get_as(dimensions, 1, char *));
-    z = atoi(xbt_dynar_get_as(dimensions, 2, char *));
+    x = xbt_dynar_get_as(dimensions, 0, int);
+    y = xbt_dynar_get_as(dimensions, 1, int);
+    z = xbt_dynar_get_as(dimensions, 2, int);
+
     /**
      * Add loops, so each rank can send messages to itself
      * Maybe this is important for some edge case...?
@@ -835,12 +840,11 @@ static void routing_parse_torus(sg_platf_torus_cbarg_t torus) {
         s_sg_platf_link_cbarg_t link;
         link_id = bprintf("link_from_%i_to_%i", rankId, rankId);
         memset(&link, 0, sizeof(link));
-        link.id = link_id;
+        link.id        = link_id;
         link.bandwidth = torus->bw;
-        link.latency = torus->lat;
-        link.state = SURF_RESOURCE_ON;
-        /*link.policy = torus->sharing_policy;*/
-        printf("Adding %s\n", link_id);
+        link.latency   = torus->lat;
+        link.state     = SURF_RESOURCE_ON;
+        link.policy    = torus->sharing_policy;
         sg_platf_new_link(&link);
     }
     for (rankId = 0; rankId < totalRanks; rankId++) {
@@ -865,7 +869,6 @@ static void routing_parse_torus(sg_platf_torus_cbarg_t torus) {
           link.latency = torus->lat;
           link.state = SURF_RESOURCE_ON;
           /*link.policy = torus->sharing_policy;*/
-          printf("Adding %s\n", link_id);
           sg_platf_new_link(&link);
       }
     }
@@ -873,6 +876,7 @@ static void routing_parse_torus(sg_platf_torus_cbarg_t torus) {
     s_sg_platf_AS_cbarg_t AS = SG_PLATF_AS_INITIALIZER;
     AS.id = torus->id;
     AS.routing = A_surfxml_AS_routing_Torus;
+    ((as_torus_t)current_routing)->dimensions = dimensions;
     sg_platf_new_AS_begin(&AS);
 
 
