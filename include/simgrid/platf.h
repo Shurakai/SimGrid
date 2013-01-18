@@ -178,6 +178,7 @@ typedef struct s_sg_platf_torus_cbarg {
   int core_amount;
   double bw;
   double lat;
+  e_surf_link_sharing_policy_t sharing_policy;
 } s_sg_platf_torus_cbarg_t;
 
 #define SG_PLATF_TORUS_INITIALIZER {NULL,NULL,NULL,NULL,NULL,NULL}
