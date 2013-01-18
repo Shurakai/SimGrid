@@ -12,17 +12,18 @@
 #include "simgrid/platf_interface.h"
 
 XBT_LOG_EXTERNAL_DEFAULT_CATEGORY(surf_parse);
-xbt_dynar_t sg_platf_host_cb_list = NULL;   // of sg_platf_host_cb_t
+xbt_dynar_t sg_platf_host_cb_list      = NULL;   // of sg_platf_host_cb_t
 xbt_dynar_t sg_platf_host_link_cb_list = NULL;   // of sg_platf_host_link_cb_t
-xbt_dynar_t sg_platf_link_cb_list = NULL;   // of sg_platf_link_cb_t
-xbt_dynar_t sg_platf_router_cb_list = NULL; // of sg_platf_router_cb_t
-xbt_dynar_t sg_platf_peer_cb_list = NULL; // of sg_platf_peer_cb_t
-xbt_dynar_t sg_platf_cluster_cb_list = NULL; // of sg_platf_cluster_cb_t
-xbt_dynar_t sg_platf_cabinet_cb_list = NULL; // of sg_platf_cluster_cb_t
-xbt_dynar_t sg_platf_AS_begin_cb_list = NULL; //of sg_platf_AS_begin_cb_t
-xbt_dynar_t sg_platf_AS_end_cb_list = NULL; //of void_f_void_t
+xbt_dynar_t sg_platf_link_cb_list      = NULL;   // of sg_platf_link_cb_t
+xbt_dynar_t sg_platf_router_cb_list    = NULL; // of sg_platf_router_cb_t
+xbt_dynar_t sg_platf_peer_cb_list      = NULL; // of sg_platf_peer_cb_t
+xbt_dynar_t sg_platf_torus_cb_list     = NULL; // of sg_platf_torus_cb_t
+xbt_dynar_t sg_platf_cluster_cb_list   = NULL; // of sg_platf_cluster_cb_t
+xbt_dynar_t sg_platf_cabinet_cb_list   = NULL; // of sg_platf_cluster_cb_t
+xbt_dynar_t sg_platf_AS_begin_cb_list  = NULL; //of sg_platf_AS_begin_cb_t
+xbt_dynar_t sg_platf_AS_end_cb_list    = NULL; //of void_f_void_t
 xbt_dynar_t sg_platf_postparse_cb_list = NULL; // of void_f_void_t
-xbt_dynar_t sg_platf_prop_cb_list = NULL; // of sg_platf_prop_cb_t
+xbt_dynar_t sg_platf_prop_cb_list      = NULL; // of sg_platf_prop_cb_t
 
 xbt_dynar_t sg_platf_route_cb_list = NULL; // of sg_platf_route_cb_t
 xbt_dynar_t sg_platf_ASroute_cb_list = NULL; // of sg_platf_ASroute_cb_t
@@ -58,17 +59,18 @@ void sg_platf_init(void) {
   if(sg_platf_host_cb_list)
     return; //Already initialized, so do nothing...
 
-  sg_platf_host_cb_list = xbt_dynar_new(sizeof(sg_platf_host_cb_t), NULL);
+  sg_platf_host_cb_list      = xbt_dynar_new(sizeof(sg_platf_host_cb_t), NULL);
   sg_platf_host_link_cb_list = xbt_dynar_new(sizeof(sg_platf_host_link_cb_t), NULL);
-  sg_platf_router_cb_list = xbt_dynar_new(sizeof(sg_platf_router_cb_t), NULL);
-  sg_platf_link_cb_list = xbt_dynar_new(sizeof(sg_platf_link_cb_t), NULL);
-  sg_platf_peer_cb_list = xbt_dynar_new(sizeof(sg_platf_peer_cb_t), NULL);
-  sg_platf_cluster_cb_list = xbt_dynar_new(sizeof(sg_platf_cluster_cb_t), NULL);
-  sg_platf_cabinet_cb_list = xbt_dynar_new(sizeof(sg_platf_cabinet_cb_t), NULL);
+  sg_platf_router_cb_list    = xbt_dynar_new(sizeof(sg_platf_router_cb_t), NULL);
+  sg_platf_link_cb_list      = xbt_dynar_new(sizeof(sg_platf_link_cb_t), NULL);
+  sg_platf_peer_cb_list      = xbt_dynar_new(sizeof(sg_platf_peer_cb_t), NULL);
+  sg_platf_torus_cb_list     = xbt_dynar_new(sizeof(sg_platf_torus_cb_t), NULL);
+  sg_platf_cluster_cb_list   = xbt_dynar_new(sizeof(sg_platf_cluster_cb_t), NULL);
+  sg_platf_cabinet_cb_list   = xbt_dynar_new(sizeof(sg_platf_cabinet_cb_t), NULL);
   sg_platf_postparse_cb_list = xbt_dynar_new(sizeof(sg_platf_link_cb_t),NULL);
-  sg_platf_AS_begin_cb_list = xbt_dynar_new(sizeof(sg_platf_AS_cb_t),NULL);
-  sg_platf_AS_end_cb_list = xbt_dynar_new(sizeof(sg_platf_AS_cb_t),NULL);
-  sg_platf_prop_cb_list = xbt_dynar_new(sizeof(sg_platf_prop_cb_t),NULL);
+  sg_platf_AS_begin_cb_list  = xbt_dynar_new(sizeof(sg_platf_AS_cb_t),NULL);
+  sg_platf_AS_end_cb_list    = xbt_dynar_new(sizeof(sg_platf_AS_cb_t),NULL);
+  sg_platf_prop_cb_list      = xbt_dynar_new(sizeof(sg_platf_prop_cb_t),NULL);
 
   sg_platf_route_cb_list = xbt_dynar_new(sizeof(sg_platf_route_cb_t), NULL);
   sg_platf_ASroute_cb_list = xbt_dynar_new(sizeof(sg_platf_route_cb_t), NULL);
@@ -165,6 +167,13 @@ void sg_platf_new_peer(sg_platf_peer_cbarg_t peer){
   sg_platf_peer_cb_t fun;
   xbt_dynar_foreach(sg_platf_peer_cb_list, iterator, fun) {
     fun(peer);
+  }
+}
+void sg_platf_new_torus(sg_platf_torus_cbarg_t torus){
+  unsigned int iterator;
+  sg_platf_torus_cb_t fun;
+  xbt_dynar_foreach(sg_platf_torus_cb_list, iterator, fun) {
+    fun(torus);
   }
 }
 void sg_platf_new_cluster(sg_platf_cluster_cbarg_t cluster){
@@ -365,6 +374,9 @@ void sg_platf_router_add_cb(sg_platf_router_cb_t fct) {
 }
 void sg_platf_peer_add_cb(sg_platf_peer_cb_t fct) {
   xbt_dynar_push(sg_platf_peer_cb_list, &fct);
+}
+void sg_platf_torus_add_cb(sg_platf_torus_cb_t fct) {
+  xbt_dynar_push(sg_platf_torus_cb_list, &fct);
 }
 void sg_platf_cluster_add_cb(sg_platf_cluster_cb_t fct) {
   xbt_dynar_push(sg_platf_cluster_cb_list, &fct);
