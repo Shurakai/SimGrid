@@ -286,6 +286,7 @@ typedef int AT_surfxml_cabinet_power;
 #define AU_surfxml_cabinet_power NULL
 typedef int AT_surfxml_host_core;
 #define AU_surfxml_host_core NULL
+typedef enum { AU_surfxml_torus_sharing_policy, A_surfxml_torus_sharing_policy_SHARED,A_surfxml_torus_sharing_policy_FULLDUPLEX,A_surfxml_torus_sharing_policy_FATPIPE } AT_surfxml_torus_sharing_policy;
 typedef int AT_surfxml_storage_type_model;
 #define AU_surfxml_storage_type_model NULL
 typedef int AT_surfxml_host_availability;
@@ -616,6 +617,9 @@ XBT_PUBLIC_DATA(short ) int surfxml_cabinet_power_isset;
 XBT_PUBLIC_DATA(AT_surfxml_host_core ) AX_surfxml_host_core;
 #define A_surfxml_host_core (surfxml_bufferstack + AX_surfxml_host_core)
 XBT_PUBLIC_DATA(short ) int surfxml_host_core_isset;
+XBT_PUBLIC_DATA(AT_surfxml_torus_sharing_policy ) AX_surfxml_torus_sharing_policy;
+#define A_surfxml_torus_sharing_policy AX_surfxml_torus_sharing_policy
+XBT_PUBLIC_DATA(short ) int surfxml_torus_sharing_policy_isset;
 XBT_PUBLIC_DATA(AT_surfxml_storage_type_model ) AX_surfxml_storage_type_model;
 #define A_surfxml_storage_type_model (surfxml_bufferstack + AX_surfxml_storage_type_model)
 XBT_PUBLIC_DATA(short ) int surfxml_storage_type_model_isset;
