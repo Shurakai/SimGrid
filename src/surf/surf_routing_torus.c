@@ -28,9 +28,9 @@ static void torus_get_route_and_latency(AS_t as,
               /*src->name,src->id,*/
               /*dst->name,dst->id);*/
 
-    printf("torus_get_route_and_latency from'%s'[%d] to '%s'[%d]\n",
-           src->name,src->id,
-           dst->name,dst->id);
+    /*printf("torus_get_route_and_latency from'%s'[%d] to '%s'[%d]\n",*/
+           /*src->name,src->id,*/
+           /*dst->name,dst->id);*/
 
     as_torus_t torusAS = (as_torus_t) as;
 
@@ -38,10 +38,10 @@ static void torus_get_route_and_latency(AS_t as,
     if (src->id == dst->id) {
         /*link_name = bprintf("*/
         link_name = bprintf("link_from_%i_to_%i", src->id, src->id);
-        printf("src and dst are equal... adding loop\n");
+        /*printf("src and dst are equal... adding loop\n");*/
         void *link = xbt_lib_get_or_null(link_lib, link_name, SURF_LINK_LEVEL);
         xbt_dynar_push(route->link_list, &link);
-        printf("Leaving route_torus_latency...\n");
+        /*printf("Leaving route_torus_latency...\n");*/
         free(link_name);
 
         return;
@@ -54,7 +54,7 @@ static void torus_get_route_and_latency(AS_t as,
     int x                         = xbt_dynar_get_as(torusAS->dimensions, 0, int);
     int y                         = xbt_dynar_get_as(torusAS->dimensions, 1, int);
     int z                         = xbt_dynar_get_as(torusAS->dimensions, 2, int);
-    printf("x=%i,y=%i,z=%i\n", x, y, z);
+    /*printf("x=%i,y=%i,z=%i\n", x, y, z);*/
     int current_node              = src->id;
     int next_node                 = 0;
     int myCoords[3]               = {src->id % x, ( src->id / x) % y, (src->id / x*y) % z};
@@ -62,7 +62,7 @@ static void torus_get_route_and_latency(AS_t as,
     bool use_lnk_from_cur_to_next = false;
     while (current_node != dst->id) {
       // First, we will route in x-dimension
-      printf("Current node: %i, src: %i, dst: %i \n", current_node, src->id, dst->id);
+      /*printf("Current node: %i, src: %i, dst: %i \n", current_node, src->id, dst->id);*/
       if (current_node % x != dst->id % x) {
          // Route to the right
          if (( targetCoords[0] > myCoords[0] && targetCoords[0] <= myCoords[0]+x/2) // Are we on the right, without the wrap-around?
@@ -126,7 +126,7 @@ static void torus_get_route_and_latency(AS_t as,
         /*printf("Routing in z dimension: Next node: %i\n", next_node);*/
       }
 
-      printf("Current node is %i\n", current_node);
+      /*printf("Current node is %i\n", current_node);*/
 
       assert(next_node >= 0);
 
@@ -135,7 +135,7 @@ static void torus_get_route_and_latency(AS_t as,
       else
         link_name = bprintf("link_from_%i_to_%i", next_node, current_node);
 
-      printf("Adding link %s to the route\n", link_name);
+      /*printf("Adding link %s to the route\n", link_name);*/
       void *link = xbt_lib_get_or_null(link_lib, link_name, SURF_LINK_LEVEL);
       xbt_dynar_push(route->link_list, &link);
 

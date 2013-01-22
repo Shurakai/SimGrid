@@ -792,7 +792,7 @@ static void routing_parse_cabinet(sg_platf_cabinet_cbarg_t cabinet)
 }
 
 static void routing_parse_torus(sg_platf_torus_cbarg_t torus) {
-    printf("Hier ist der Parser für Tori! ID: %s\n", torus->dimensions);
+    /*printf("Hier ist der Parser für Tori! ID: %s\n", torus->dimensions);*/
 
     char *groups, *link_id = NULL;
     unsigned int iter, totalRanks = 0;
@@ -882,7 +882,7 @@ static void routing_parse_torus(sg_platf_torus_cbarg_t torus) {
 
     free(link_id);
 
-    printf("END of routing_parse_torus()\n");
+    /*printf("END of routing_parse_torus()\n");*/
 }
 
 static void routing_parse_cluster(sg_platf_cluster_cbarg_t cluster)
