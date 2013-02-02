@@ -791,15 +791,25 @@ static void routing_parse_cabinet(sg_platf_cabinet_cbarg_t cabinet)
   xbt_dynar_free(&radical_elements);
 }
 
+/**
+ * Parses the <torus> tag, which can be used to create an
+ * n-dimensional torus with ease. This function creates all
+ * the required hosts and sets up the network;
+ * currently, the links can be FULLDUPLEX or not.
+ */
 static void routing_parse_torus(sg_platf_torus_cbarg_t torus) {
-    /*printf("Hier ist der Parser für Tori! ID: %s\n", torus->dimensions);*/
-
     char *groups, *link_id = NULL;
     unsigned int iter, totalRanks = 0;
+    /** Contains the size for each dimension **/
     xbt_dynar_t dimensions;
     dimensions = xbt_str_split(torus->dimensions, ",");
-    xbt_dynar_foreach(dimensions, iter, groups) {
 
+    /**
+     * Parse attribute dimensions="dim1,dim2,dim3,...,dimN"
+     * and safe it in a dynarray.
+     * Additionally, we need to know how many ranks we have in total
+     */
+    xbt_dynar_foreach(dimensions, iter, groups) {
         int tmp = surf_parse_get_int(xbt_dynar_get_as(dimensions, iter, char *));
         xbt_dynar_set_as(dimensions, iter, int, tmp);
 
@@ -809,15 +819,24 @@ static void routing_parse_torus(sg_platf_torus_cbarg_t torus) {
             totalRanks *= tmp;
     }
 
+    // All links are saved in a matrix;
+    // every row describes a single node; every node
+    // has multiple links.
+    // the FIRST column is always the cycle from x to x
+    // after that, each dimension has 2 columns
+    int links_total = (xbt_dynar_length(dimensions)*totalRanks + totalRanks);
+    xbt_dynar_t links = xbt_dynar_new(sizeof(s_surf_parsing_link_up_down_t),NULL);
+
+    if(!current_routing->link_up_down_list)
+      current_routing->link_up_down_list = xbt_dynar_new(sizeof(s_surf_parsing_link_up_down_t),NULL);
+
     int i = 0;
-    int j = 0;
-    int rankId = 0;
     for (i = 0; i < totalRanks; i++) {
         s_sg_platf_host_cbarg_t host;
         memset(&host, 0, sizeof(host));
 
         host.id = bprintf("host%i", i);
-        host.power_peak = torus->power;
+        host.power_peak  = torus->power;
         host.power_scale = 1.0;
         host.core_amount = torus->core_amount;
         // SURF_RESOURCE_ON = Host is up & ready
@@ -826,63 +845,108 @@ static void routing_parse_torus(sg_platf_torus_cbarg_t torus) {
         sg_platf_new_host(&host);
     }
 
-    int neighbour;
-    int x,y,z;
-    x = xbt_dynar_get_as(dimensions, 0, int);
-    y = xbt_dynar_get_as(dimensions, 1, int);
-    z = xbt_dynar_get_as(dimensions, 2, int);
-
     /**
      * Add loops, so each rank can send messages to itself
      * Maybe this is important for some edge case...?
      */
+    int rankId = 0;
     for (rankId = 0; rankId < totalRanks; rankId++) {
         s_sg_platf_link_cbarg_t link;
-        link_id = bprintf("link_from_%i_to_%i", rankId, rankId);
         memset(&link, 0, sizeof(link));
-        link.id        = link_id;
-        link.bandwidth = torus->bw;
-        link.latency   = torus->lat;
-        link.state     = SURF_RESOURCE_ON;
-        link.policy    = torus->sharing_policy;
+        link_id             = bprintf("link_from_%i_to_%i", rankId, rankId);
+        link.id             = link_id;
+        link.bandwidth      = torus->bw;
+        link.latency        = torus->lat;
+        // SURF_RESOURCE_ON = LINK is up & ready
+        link.state          = SURF_RESOURCE_ON;
+        link.policy         = torus->sharing_policy;
         sg_platf_new_link(&link);
+
+        s_surf_parsing_link_up_down_t info;
+        if (link.policy == SURF_LINK_FULLDUPLEX) {
+            char *tmp_link = bprintf("%s_UP", link_id);
+            info.link_up =
+                xbt_lib_get_or_null(link_lib, tmp_link, SURF_LINK_LEVEL);
+            free(tmp_link);
+            tmp_link = bprintf("%s_DOWN", link_id);
+            info.link_down =
+                xbt_lib_get_or_null(link_lib, tmp_link, SURF_LINK_LEVEL);
+            free(tmp_link);
+        } else {
+            info.link_up = xbt_lib_get_or_null(link_lib, link_id, SURF_LINK_LEVEL);
+            info.link_down = info.link_up;
+        }
+
+        xbt_dynar_set(links, rankId*(xbt_dynar_length(dimensions)+1), &info);
     }
+
+    /**
+     * Add links between adjacent hosts
+     * This will create #dimensions*totalRanks links
+     */
+    int j = 0;
     for (rankId = 0; rankId < totalRanks; rankId++) {
       s_sg_platf_link_cbarg_t link;
 
       /**
        * Create all links that exist in the torus.
-       * Each rank creates 3 links: up, right and deep.
-       **/
-      for (j = 0; j < 3; j++) {
-          if (j == 0) // Calculate right neighbour in x-dim
-              neighbour = (rankId % x == x-1) ? rankId-x+1 : rankId+1;
-          else if (j == 1) // From bottom to top
-              neighbour = ( ((int) rankId / x) % y == y-1) ? rankId-(y-1)*x : rankId+x;
-          else if (j == 2) // "Deeper" in z-dim
-              neighbour = ( ((int) rankId / (x*y)) == z-1) ? rankId-(z-1)*x*y : rankId+x*y;
+       * Each rank creates #dimensions-1 links
+       */
+      int neighbour_rank_id = 0; // The other node the link connects
+      int current_dimension = 0, // which dimension are we currently in?
+                                 // we need to iterate over all dimensions
+                                 // and create all links there
+          dim_product       = 1; // Needed to calculate the next neighbour_id
+      for (j = 0; j < xbt_dynar_length(dimensions); j++) {
 
-          link_id = bprintf("link_from_%i_to_%i", rankId, neighbour);
           memset(&link, 0, sizeof(link));
-          link.id = link_id;
-          link.bandwidth = torus->bw;
-          link.latency = torus->lat;
-          link.state = SURF_RESOURCE_ON;
-          /*link.policy = torus->sharing_policy;*/
+          current_dimension = xbt_dynar_get_as(dimensions, j, int);
+          neighbour_rank_id = ( ((int) rankId / dim_product) % current_dimension == current_dimension-1) ? rankId - (current_dimension-1)*dim_product : rankId + dim_product;
+          link_id           = bprintf("link_from_%i_to_%i", rankId, neighbour_rank_id);
+          link.id           = link_id;
+          link.bandwidth    = torus->bw;
+          link.latency      = torus->lat;
+          link.state        = SURF_RESOURCE_ON;
+          link.policy       = torus->sharing_policy;
           sg_platf_new_link(&link);
+
+
+          s_surf_parsing_link_up_down_t info;
+          if (link.policy == SURF_LINK_FULLDUPLEX) {
+              char *tmp_link = bprintf("%s_UP", link_id);
+              info.link_up =
+                  xbt_lib_get_or_null(link_lib, tmp_link, SURF_LINK_LEVEL);
+              free(tmp_link);
+              tmp_link = bprintf("%s_DOWN", link_id);
+              info.link_down =
+                  xbt_lib_get_or_null(link_lib, tmp_link, SURF_LINK_LEVEL);
+              free(tmp_link);
+          } else {
+              // TODO Do we really have to have this statement or can this
+              // be replaced with something that does not use the hashmap?
+              // However, Tori might have FULLDUPLEX enabled most of
+              // the time, so it might not be worth the hassle.
+              info.link_up = xbt_lib_get_or_null(link_lib, link_id, SURF_LINK_LEVEL);
+              info.link_down = info.link_up;
+          }
+          /**
+           * Add the link to its appropriate position;
+           * note that position rankId*(xbt_dynar_length(dimensions)+1)
+           * holds the link "rankId->rankId"
+           */
+          xbt_dynar_set(links, rankId*(xbt_dynar_length(dimensions)+1)+j+1, &info);
+
+          dim_product   *= current_dimension;
+          xbt_free(link_id);
       }
     }
 
-    s_sg_platf_AS_cbarg_t AS = SG_PLATF_AS_INITIALIZER;
-    AS.id = torus->id;
-    AS.routing = A_surfxml_AS_routing_Torus;
+    s_sg_platf_AS_cbarg_t AS                  = SG_PLATF_AS_INITIALIZER;
+    AS.id                                     = torus->id;
+    AS.routing                                = A_surfxml_AS_routing_Torus;
     ((as_torus_t)current_routing)->dimensions = dimensions;
+    ((as_torus_t)current_routing)->links      = links;
     sg_platf_new_AS_begin(&AS);
-
-
-    free(link_id);
-
-    /*printf("END of routing_parse_torus()\n");*/
 }
 
 static void routing_parse_cluster(sg_platf_cluster_cbarg_t cluster)

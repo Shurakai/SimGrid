@@ -75,6 +75,8 @@ typedef struct {
   // These are the dimension measures of our torus; it's dynamic, so that
   // a n-dimensional torus can be easily implemented.
   xbt_dynar_t dimensions;
+  //surf_resource_t* links;
+  xbt_dynar_t links;
 } s_as_torus_t, *as_torus_t;
 AS_t model_torus_create(void);      /* create structures for torus dimension routing model */
 

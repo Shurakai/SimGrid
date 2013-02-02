@@ -9,6 +9,7 @@
 
 #include "surf_routing_private.h"
 #include "assert.h"
+inline int* rankId_to_coords(int, xbt_dynar_t);
 
 /* Global vars */
 
@@ -23,26 +24,19 @@ static void torus_get_route_and_latency(AS_t as,
     sg_routing_edge_t src, sg_routing_edge_t dst,
     sg_platf_route_cbarg_t route, double *lat) {
 
-    /*s_surf_parsing_link_up_down_t info;*/
-    /*XBT_DEBUG("torus_get_route_and_latency from '%s'[%d] to '%s'[%d]",*/
-              /*src->name,src->id,*/
-              /*dst->name,dst->id);*/
-
-    /*printf("torus_get_route_and_latency from'%s'[%d] to '%s'[%d]\n",*/
-           /*src->name,src->id,*/
-           /*dst->name,dst->id);*/
+    XBT_DEBUG("torus_get_route_and_latency from '%s'[%d] to '%s'[%d]",
+              src->name,src->id,
+              dst->name,dst->id);
 
     as_torus_t torusAS = (as_torus_t) as;
 
-    char* link_name;
     if (src->id == dst->id) {
-        /*link_name = bprintf("*/
-        link_name = bprintf("link_from_%i_to_%i", src->id, src->id);
-        /*printf("src and dst are equal... adding loop\n");*/
-        void *link = xbt_lib_get_or_null(link_lib, link_name, SURF_LINK_LEVEL);
+        void* link = xbt_dynar_get_as(torusAS->links,src->id*(xbt_dynar_length(torusAS->dimensions)+1), void*);
         xbt_dynar_push(route->link_list, &link);
-        /*printf("Leaving route_torus_latency...\n");*/
-        free(link_name);
+
+        s_surf_parsing_link_up_down_t info = xbt_dynar_get_as(torusAS->links,src->id*(xbt_dynar_length(torusAS->dimensions)+1), s_surf_parsing_link_up_down_t);
+
+        xbt_dynar_push_as(route->link_list,void*,info.link_down);
 
         return;
     }
@@ -51,121 +45,79 @@ static void torus_get_route_and_latency(AS_t as,
      * Dimension based routing routes through each dimension consecutively
      * TODO Change to dynamic assignment
      */
-    int x                         = xbt_dynar_get_as(torusAS->dimensions, 0, int);
-    int y                         = xbt_dynar_get_as(torusAS->dimensions, 1, int);
-    int z                         = xbt_dynar_get_as(torusAS->dimensions, 2, int);
-    /*printf("x=%i,y=%i,z=%i\n", x, y, z);*/
-    int current_node              = src->id;
-    int next_node                 = 0;
-    int myCoords[3]               = {src->id % x, ( src->id / x) % y, (src->id / x*y) % z};
-    int targetCoords[3]           = {dst->id % x, ( dst->id / x) % y, (dst->id / x*y) % z};
-    bool use_lnk_from_cur_to_next = false;
+    int j, cur_dim, dim_product   = 1;
+    long unsigned current_node    = src->id;
+    long unsigned next_node       = -1;
+    /**
+     * Arrays that hold the coordinates of the current node and
+     * the target; comparing the values at the i-th position of
+     * both arrays, we can easily assess whether we need to route
+     * into this dimension or not.
+     */
+    int* myCoords, *targetCoords;
+    myCoords     = rankId_to_coords(src->id, torusAS->dimensions);
+    targetCoords = rankId_to_coords(dst->id, torusAS->dimensions);
+    /**
+     * linkOffset describes the offset where the link
+     * we want to use is stored
+     * (+1 is added because each node has a link from itself to itself,
+     * which can only be the case if src->id == dst->id -- see above
+     * for this special case)
+     */
+    long unsigned linkOffset = (xbt_dynar_length(torusAS->dimensions)+1)*src->id;
+    bool use_lnk_up          = false; // Is this link of the form "cur -> next" or "next -> cur"?
+                                      // false means: next -> cur
     while (current_node != dst->id) {
-      // First, we will route in x-dimension
-      /*printf("Current node: %i, src: %i, dst: %i \n", current_node, src->id, dst->id);*/
-      if (current_node % x != dst->id % x) {
-         // Route to the right
-         if (( targetCoords[0] > myCoords[0] && targetCoords[0] <= myCoords[0]+x/2) // Are we on the right, without the wrap-around?
-             || ( myCoords[0] > x/2 && (myCoords[0]+x/2)%x >= targetCoords[0] )) { // Or do we need to use the wrap around?
-            if (current_node % x == x-1)
-                next_node = (current_node+1-x);
-            else
-                next_node = (current_node+1);
+      dim_product = 1; // First, we will route in x-dimension
+      for (j = 0; j < xbt_dynar_length(torusAS->dimensions); j++) {
+          cur_dim = xbt_dynar_get_as(torusAS->dimensions, j, int);
 
-            use_lnk_from_cur_to_next = true;
-         }
-         else { // route to the left
-            if (current_node % x == 0)
-                next_node = current_node - 1 + x;
-            else
-                next_node = current_node - 1;
+          // current_node/dim_product = position in current dimension
+          if ((current_node/dim_product) % cur_dim != (dst->id/dim_product) % cur_dim) {
 
-            use_lnk_from_cur_to_next = false;
-         }
-         /*printf("Routing in x dimension: Next node: %i\n", next_node);*/
-      }
-      else if ((current_node / x ) % y != (dst->id / x) % y) {
-        if (( targetCoords[1] > myCoords[1] && targetCoords[1] <= myCoords[1]+y/2) // Is the target node above us, without having to use the wrap-around?
-            || ( myCoords[1] > y/2 && (myCoords[1]+y/2)%y >= targetCoords[1] )) {
-           if ( (current_node / x) % y == y-1)
-               next_node = current_node + x - x*y;
-           else
-               next_node = current_node + x;
+              if (( targetCoords[j] > myCoords[j] && targetCoords[j] <= myCoords[j]+cur_dim/2) // Is the target node on the right, without the wrap-around?
+                  || ( myCoords[j] > cur_dim/2 && (myCoords[j]+cur_dim/2)%cur_dim >= targetCoords[j] )) { // Or do we need to use the wrap around to reach it?
+                if ((current_node / dim_product) % cur_dim == cur_dim-1)
+                    next_node = (current_node+dim_product-dim_product*cur_dim);
+                else
+                    next_node = (current_node+dim_product);
 
-           use_lnk_from_cur_to_next = true;
-        }
-        else {
-            if ( (current_node / x) % y == 0) // Use wrap around from bottom to top
-                next_node = current_node - x + x*y;
-            else // Route down
-                next_node = current_node - x;
+                // HERE: We use *CURRENT* node for calculation (as opposed to next_node)
+                linkOffset = current_node*(xbt_dynar_length(torusAS->dimensions)+1)+j+1;
+                use_lnk_up = true;
+                assert(linkOffset >= 0);
+              }
+              else { // Route to the left
+                if ((current_node / dim_product) % cur_dim == 0)
+                    next_node = (current_node-dim_product+dim_product*cur_dim);
+                else
+                    next_node = (current_node-dim_product);
 
-            use_lnk_from_cur_to_next = false;
-        }
-        /*printf("Routing in y dimension: Next node: %i\n", next_node);*/
-      }
-      else if ((current_node / (x*y) ) % z != (dst->id / (x*y)) % z) {
-        if (( targetCoords[2] > myCoords[2] && targetCoords[2] <= myCoords[2]+z/2) // Is the target node above us, without having to use the wrap-around?
-                  || ( myCoords[2] > z/2 && (myCoords[2]+z/2)%z >= targetCoords[2] )) {
-           if ( (current_node / x) % y == y-1)
-               next_node = current_node + x*y - x*y*z;
-           else
-               next_node = current_node + x*y;
+                // HERE: We use *next* node for calculation (as opposed to current_node!)
+                linkOffset = next_node*(xbt_dynar_length(torusAS->dimensions)+1)+j+1;
+                use_lnk_up = false;
 
-           use_lnk_from_cur_to_next = true;
-        }
-        else {
-            if ( (current_node / (x*y)) % z == 0) // Use wrap around from bottom to top
-                next_node = current_node - x*y + x*y*z;
-            else // Route down
-                next_node = current_node - x*y;
+                assert(linkOffset >= 0);
+              }
+              XBT_DEBUG("torus_get_route_and_latency - current_node: %lu, next_node: %lu, linkOffset is %lu",
+              current_node, next_node, linkOffset);
 
-            use_lnk_from_cur_to_next = false;
-        }
+              break;
+          }
 
-        /*printf("Routing in z dimension: Next node: %i\n", next_node);*/
+          dim_product *= cur_dim;
       }
 
-      /*printf("Current node is %i\n", current_node);*/
+      s_surf_parsing_link_up_down_t info = xbt_dynar_get_as(torusAS->links,linkOffset, s_surf_parsing_link_up_down_t);
 
-      assert(next_node >= 0);
-
-      if (use_lnk_from_cur_to_next)
-        link_name = bprintf("link_from_%i_to_%i", current_node, next_node);
+      if (use_lnk_up == false)
+          xbt_dynar_push_as(route->link_list,void*,info.link_down);
       else
-        link_name = bprintf("link_from_%i_to_%i", next_node, current_node);
-
-      /*printf("Adding link %s to the route\n", link_name);*/
-      void *link = xbt_lib_get_or_null(link_lib, link_name, SURF_LINK_LEVEL);
-      xbt_dynar_push(route->link_list, &link);
+          xbt_dynar_push_as(route->link_list,void*,info.link_up);
 
       current_node = next_node;
       next_node = -1;
     }
-    free(link_name);
-
-
-    /*route = generic_new_extended_route(as->hierarchy, route_tmp, 1);*/
-
-    /**lat = 100;*/
-
-    /*if(src->rc_type != SURF_NETWORK_ELEMENT_ROUTER){ // No specific link for router*/
-        /*info = xbt_dynar_get_as(as->link_up_down_list,src->id,s_surf_parsing_link_up_down_t);*/
-        /*if(info.link_up) { // link up*/
-          /*xbt_dynar_push_as(route->link_list,void*,info.link_up);*/
-        /*if (lat)*/
-          /**lat += surf_network_model->extension.network.get_link_latency(info.link_up);*/
-        /*}*/
-    /*}*/
-
-    /*if(dst->rc_type != SURF_NETWORK_ELEMENT_ROUTER){ // No specific link for router*/
-        /*info = xbt_dynar_get_as(as->link_up_down_list,dst->id,s_surf_parsing_link_up_down_t);*/
-        /*if(info.link_down) { // link down*/
-          /*xbt_dynar_push_as(route->link_list,void*,info.link_down);*/
-        /*if (lat)*/
-          /**lat += surf_network_model->extension.network.get_link_latency(info.link_down);*/
-        /*}*/
-    /*}*/
 }
 
 static void model_torus_finalize(AS_t as) {
@@ -194,4 +146,17 @@ AS_t model_torus_create(void)
   result->parse_PU = torus_parse_PU;
 
   return (AS_t) result;
+}
+
+inline int* rankId_to_coords(int rankId, xbt_dynar_t dimensions) {
+
+    int i = 0, cur_dim_size = 1, dim_size_product = 1;
+    int* coords = malloc(xbt_dynar_length(dimensions)*sizeof(int));
+    for (i = 0; i < xbt_dynar_length(dimensions); i++) {
+        cur_dim_size = xbt_dynar_get_as(dimensions, i, int);
+        coords[i] = (rankId / dim_size_product) % cur_dim_size;
+        dim_size_product *= cur_dim_size;
+    }
+
+    return coords;
 }
