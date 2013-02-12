@@ -47,7 +47,7 @@ static void torus_get_route_and_latency(AS_t as,
      */
     int j, cur_dim, dim_product   = 1;
     long unsigned current_node    = src->id;
-    long unsigned next_node       = -1;
+    long unsigned next_node       = 0;
     /**
      * Arrays that hold the coordinates of the current node and
      * the target; comparing the values at the i-th position of
@@ -64,7 +64,7 @@ static void torus_get_route_and_latency(AS_t as,
      * which can only be the case if src->id == dst->id -- see above
      * for this special case)
      */
-    long unsigned linkOffset = (xbt_dynar_length(torusAS->dimensions)+1)*src->id;
+    long linkOffset = (xbt_dynar_length(torusAS->dimensions)+1)*src->id;
     bool use_lnk_up          = false; // Is this link of the form "cur -> next" or "next -> cur"?
                                       // false means: next -> cur
     while (current_node != dst->id) {
@@ -116,12 +116,16 @@ static void torus_get_route_and_latency(AS_t as,
           xbt_dynar_push_as(route->link_list,void*,info.link_up);
 
       current_node = next_node;
-      next_node = -1;
+      next_node = 0;
     }
+    free(myCoords);
+    free(targetCoords);
 }
 
 static void model_torus_finalize(AS_t as) {
-  model_none_finalize(as);
+  /*xbt_dynar_free(&((as_torus_t)as)->dimensions);*/
+  xbt_dynar_free(&((as_torus_t)as)->links);
+  model_generic_finalize(as);
 }
 
 static int torus_parse_PU(AS_t rc, sg_routing_edge_t elm) {

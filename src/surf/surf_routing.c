@@ -798,7 +798,7 @@ static void routing_parse_cabinet(sg_platf_cabinet_cbarg_t cabinet)
  * currently, the links can be FULLDUPLEX or not.
  */
 static void routing_parse_torus(sg_platf_torus_cbarg_t torus) {
-    char *groups, *link_id = NULL;
+    char *groups, *link_id, *host_id = NULL;
     unsigned int iter, totalRanks = 0;
     /** Contains the size for each dimension **/
     xbt_dynar_t dimensions;
@@ -824,7 +824,6 @@ static void routing_parse_torus(sg_platf_torus_cbarg_t torus) {
     // has multiple links.
     // the FIRST column is always the cycle from x to x
     // after that, each dimension has 2 columns
-    int links_total = (xbt_dynar_length(dimensions)*totalRanks + totalRanks);
     xbt_dynar_t links = xbt_dynar_new(sizeof(s_surf_parsing_link_up_down_t),NULL);
 
     if(!current_routing->link_up_down_list)
@@ -834,8 +833,8 @@ static void routing_parse_torus(sg_platf_torus_cbarg_t torus) {
     for (i = 0; i < totalRanks; i++) {
         s_sg_platf_host_cbarg_t host;
         memset(&host, 0, sizeof(host));
-
-        host.id = bprintf("host%i", i);
+        host_id = bprintf("host%i", i);
+        host.id = host_id;
         host.power_peak  = torus->power;
         host.power_scale = 1.0;
         host.core_amount = torus->core_amount;
@@ -843,6 +842,8 @@ static void routing_parse_torus(sg_platf_torus_cbarg_t torus) {
         host.initial_state = SURF_RESOURCE_ON;
         host.coord = "";
         sg_platf_new_host(&host);
+
+        xbt_free(host_id);
     }
 
     /**
@@ -867,17 +868,18 @@ static void routing_parse_torus(sg_platf_torus_cbarg_t torus) {
             char *tmp_link = bprintf("%s_UP", link_id);
             info.link_up =
                 xbt_lib_get_or_null(link_lib, tmp_link, SURF_LINK_LEVEL);
-            free(tmp_link);
+            xbt_free(tmp_link);
             tmp_link = bprintf("%s_DOWN", link_id);
             info.link_down =
                 xbt_lib_get_or_null(link_lib, tmp_link, SURF_LINK_LEVEL);
-            free(tmp_link);
+            xbt_free(tmp_link);
         } else {
             info.link_up = xbt_lib_get_or_null(link_lib, link_id, SURF_LINK_LEVEL);
             info.link_down = info.link_up;
         }
 
         xbt_dynar_set(links, rankId*(xbt_dynar_length(dimensions)+1), &info);
+        xbt_free(link_id);
     }
 
     /**
@@ -909,7 +911,6 @@ static void routing_parse_torus(sg_platf_torus_cbarg_t torus) {
           link.state        = SURF_RESOURCE_ON;
           link.policy       = torus->sharing_policy;
           sg_platf_new_link(&link);
-
 
           s_surf_parsing_link_up_down_t info;
           if (link.policy == SURF_LINK_FULLDUPLEX) {
