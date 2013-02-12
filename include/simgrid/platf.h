@@ -323,6 +323,7 @@ XBT_PUBLIC(void) sg_platf_new_host_link(sg_platf_host_link_cbarg_t h); // Add an
 XBT_PUBLIC(void) sg_platf_new_router (sg_platf_router_cbarg_t router); // Add a router  to the currently described AS
 XBT_PUBLIC(void) sg_platf_new_link   (sg_platf_link_cbarg_t link);     // Add a link    to the currently described AS
 XBT_PUBLIC(void) sg_platf_new_peer   (sg_platf_peer_cbarg_t peer);     // Add a peer    to the currently described AS
+XBT_PUBLIC(void) sg_platf_new_torus   (sg_platf_torus_cbarg_t torus);     // Add a peer    to the currently described AS
 XBT_PUBLIC(void) sg_platf_new_cluster(sg_platf_cluster_cbarg_t clust); // Add a cluster to the currently described AS
 XBT_PUBLIC(void) sg_platf_new_cabinet(sg_platf_cabinet_cbarg_t cabinet); // Add a cabinet to the currently described AS
 
