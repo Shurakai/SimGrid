@@ -31,6 +31,26 @@ void TRACE_surf_host_set_power(double date, const char *resource, double power)
   }
 }
 
+// if add_flow == true => add +1, if false then subtract 1
+void TRACE_surf_link_update_max_flow_count(double date, const char *resource, bool add_flow)
+{
+  if (TRACE_is_enabled()) {
+    // Only trace links known to tracing mechanism
+    /*if (!PJ_container_get_or_null(resource))*/
+      /*return;*/
+
+    printf("Hier %s\n", resource);
+    container_t container = PJ_container_get(resource);
+    type_t type = PJ_type_get("max_flows", container->type);
+    if (add_flow) {
+        new_pajeAddVariable(date, container, type, 1.0);
+    }
+    else {
+        new_pajeSubVariable(date, container, type, 1.0);
+    }
+  }
+}
+
 void TRACE_surf_link_set_bandwidth(double date, const char *resource, double bandwidth)
 {
   if (TRACE_categorized() || TRACE_uncategorized() || TRACE_platform()) {

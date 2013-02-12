@@ -183,6 +183,11 @@ if(enable_jedule)
   SET(HAVE_JEDULE 1)
 endif()
 
+if(enable_numflow_tracking)
+  message(STATUS "Enabling numflow tracking")
+  SET(HAVE_NUMFLOW_TRACKING 1)
+endif()
+
 if(enable_latency_bound_tracking)
   SET(HAVE_LATENCY_BOUND_TRACKING 1)
 else()
@@ -243,8 +248,8 @@ if(pthread)
     endif()
 
     execute_process(COMMAND ./sem_open
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR} 
-    RESULT_VARIABLE HAVE_SEM_OPEN_run 
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    RESULT_VARIABLE HAVE_SEM_OPEN_run
     OUTPUT_VARIABLE var_compil
     )
     file(REMOVE sem_open)
@@ -270,9 +275,9 @@ if(pthread)
 
   if(HAVE_SEM_INIT_LIB)
     execute_process(COMMAND ${CMAKE_C_COMPILER} ${CMAKE_HOME_DIRECTORY}/buildtools/Cmake/test_prog/prog_sem_init.c -lpthread -o sem_init
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR} 
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     RESULT_VARIABLE HAVE_SEM_INIT_run OUTPUT_VARIABLE HAVE_SEM_INIT_compil)
-    
+
     if(HAVE_SEM_INIT_compil)
       set(HAVE_SEM_INIT 0)
       message(STATUS "Warning: sem_init not compilable")
@@ -281,9 +286,9 @@ if(pthread)
       set(HAVE_SEM_INIT 1)
       message(STATUS "sem_init is compilable")
     endif()
-    execute_process(COMMAND ./sem_init 
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR} 
-    RESULT_VARIABLE HAVE_SEM_INIT_run 
+    execute_process(COMMAND ./sem_init
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    RESULT_VARIABLE HAVE_SEM_INIT_run
     OUTPUT_VARIABLE var_compil
     )
     file(REMOVE sem_init)

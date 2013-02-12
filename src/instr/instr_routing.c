@@ -258,6 +258,7 @@ static void instr_routing_parse_end_AS ()
 
 static void instr_routing_parse_start_link (sg_platf_link_cbarg_t link)
 {
+  printf("Mein Name: %s\n", link->id);
   container_t father = *(container_t*)xbt_dynar_get_ptr(currentContainer, xbt_dynar_length(currentContainer)-1);
 
   double bandwidth_value = link->bandwidth;
@@ -292,6 +293,12 @@ static void instr_routing_parse_start_link (sg_platf_link_cbarg_t link)
       }
       new_pajeSetVariable (0, new, bandwidth, bandwidth_value);
       new_pajeSetVariable (0, new, latency, latency_value);
+      #ifdef HAVE_NUMFLOW_TRACKING
+      type_t max_flows = PJ_type_get_or_null("max_flows", new->type);
+      if (max_flows == NULL) {
+        max_flows = PJ_type_variable_new ("max_flows", NULL, new->type);
+      }
+      #endif
     }
     if (TRACE_uncategorized()){
       type_t bandwidth_used = PJ_type_get_or_null ("bandwidth_used", new->type);
@@ -306,6 +313,7 @@ static void instr_routing_parse_start_link (sg_platf_link_cbarg_t link)
 
 static void instr_routing_parse_start_host (sg_platf_host_cbarg_t host)
 {
+  printf("Starting host: %s\n", host->id);
   container_t father = *(container_t*)xbt_dynar_get_ptr(currentContainer, xbt_dynar_length(currentContainer)-1);
   container_t new = PJ_container_new (host->id, INSTR_HOST, father);
 

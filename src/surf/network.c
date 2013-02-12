@@ -518,6 +518,9 @@ static surf_action_t net_communicate(sg_routing_edge_t src,
       failed = 1;
       break;
     }
+    #ifdef HAVE_NUMFLOW_TRACKING
+      TRACE_surf_link_update_max_flow_count(surf_get_clock(), link->lmm_resource.generic_resource.name, true);
+    #endif
   }
   if (sg_network_crosstraffic == 1) {
     routing_get_route_and_latency(dst, src, &back_route, NULL);

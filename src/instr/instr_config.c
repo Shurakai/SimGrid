@@ -199,7 +199,8 @@ int TRACE_buffer (void)
 
 int TRACE_onelink_only (void)
 {
-  return trace_onelink_only && TRACE_is_enabled();
+  return false;
+  /*return trace_onelink_only && TRACE_is_enabled();*/
 }
 
 int TRACE_disable_destroy (void)

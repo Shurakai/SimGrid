@@ -13,7 +13,7 @@
 SG_BEGIN_DECL()
 
 
-/** Define the version numbers of the used header files. 
+/** Define the version numbers of the used header files.
     sg_version() can be used to retrieve the version of the dynamic library.
     But actually, if these numbers don't match, SimGrid refuses to start (so you shouldn't have to care about sg_version() yourself) */
 
@@ -134,11 +134,15 @@ XBT_PUBLIC(char *) bprintf(const char *fmt, ...) _XBT_GNUC_PRINTF(1, 2);
 /* Tracing SimGrid */
 #cmakedefine HAVE_TRACING @HAVE_TRACING@
 
+
 /* Jedule output  */
 #cmakedefine HAVE_JEDULE @HAVE_JEDULE@
 
 /* Tracking of latency bound */
 #cmakedefine HAVE_LATENCY_BOUND_TRACKING @HAVE_LATENCY_BOUND_TRACKING@
+
+/* Tracking of maxflows */
+#cmakedefine HAVE_NUMFLOW_TRACKING @HAVE_NUMFLOW_TRACKING@
 
 /* If __thread is available */
 #cmakedefine HAVE_THREAD_LOCAL_STORAGE @HAVE_THREAD_LOCAL_STORAGE@

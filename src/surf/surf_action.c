@@ -410,11 +410,23 @@ void generic_update_actions_state_lazy(double now, double delta, surf_model_t mo
     }
 #endif
 
+    #ifdef HAVE_NUMFLOW_TRACKING
+    surf_resource_t link =
+            lmm_constraint_id(lmm_get_cnst_from_var
+                              (model->model_private->maxmin_system,
+                               action->variable, 0));
+    #endif
+
     if(model == surf_cpu_model){
       /* set the remains to 0 due to precision problems when updating the remaining amount */
       action->generic_action.remains = 0;
       surf_action_state_set((surf_action_t) action, SURF_ACTION_DONE);
       surf_action_lmm_heap_remove(model->model_private->action_heap,action); //FIXME: strange call since action was already popped
+
+  #ifdef HAVE_NUMFLOW_TRACKING
+    /*printf("Argument is %s\n", link->name);*/
+    /*TRACE_surf_link_update_max_flow_count(now, link->name, false);*/
+  #endif
     }
     else{
       // if I am wearing a latency hat
@@ -434,6 +446,10 @@ void generic_update_actions_state_lazy(double now, double delta, surf_model_t mo
         model->action_state_set((surf_action_t) action,
                                              SURF_ACTION_DONE);
         surf_action_lmm_heap_remove(model->model_private->action_heap,action);
+
+  #ifdef HAVE_NUMFLOW_TRACKING
+    TRACE_surf_link_update_max_flow_count(now, link->name, false);
+  #endif
 
         if (model->gap_remove && model == surf_network_model)
           model->gap_remove(action);
@@ -543,18 +559,31 @@ void generic_update_actions_state_full(double now, double delta, surf_model_t mo
     if (action->generic_action.max_duration != NO_MAX_DURATION)
       double_update(&(action->generic_action.max_duration), delta);
 
+    #ifdef HAVE_NUMFLOW_TRACKING
+    surf_resource_t link =
+            lmm_constraint_id(lmm_get_cnst_from_var
+                              (model->model_private->maxmin_system,
+                               action->variable, 0));
+    #endif
 
     if ((action->generic_action.remains <= 0) &&
         (lmm_get_variable_weight(action->variable) > 0)) {
       action->generic_action.finish = surf_get_clock();
       surf_action_state_set((surf_action_t) action, SURF_ACTION_DONE);
 
+      #ifdef HAVE_NUMFLOW_TRACKING
+        TRACE_surf_link_update_max_flow_count(now, link->name, false);
+      #endif
       if (model->gap_remove && model == surf_network_model)
         model->gap_remove(action);
     } else if ((action->generic_action.max_duration != NO_MAX_DURATION) &&
                (action->generic_action.max_duration <= 0)) {
       action->generic_action.finish = surf_get_clock();
       surf_action_state_set((surf_action_t) action, SURF_ACTION_DONE);
+
+      #ifdef HAVE_NUMFLOW_TRACKING
+        TRACE_surf_link_update_max_flow_count(now, link->name, false);
+      #endif
 
       if (model->gap_remove && model == surf_network_model)
         model->gap_remove(action);
